@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reset Password</title>
+</head>
+<body>
+  <h3>Reset Password for: <span id="emailDisplay"></span></h3>
+  <form id="resetForm">
+    <input type="password" id="newPassword" placeholder="New Password" required />
+    <button type="submit">Reset Password</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjTuXvYe5uJ7dwIemoeVXaFsJ-lNJjjrg",
+      authDomain: "infosec-ea172.firebaseapp.com",
+      projectId: "infosec-ea172",
+      storageBucket: "infosec-ea172.appspot.com",
+      messagingSenderId: "521681697123",
+      appId: "1:521681697123:web:4236bfca683dcbfa033b56",
+      measurementId: "G-8QX9P5WV5Z"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    function getEmailFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("email");
+    }
+
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    const email = getEmailFromURL();
+    document.getElementById("emailDisplay").textContent = email || "unknown";
+
+    document.getElementById("resetForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById("newPassword").value;
+      const hashed = await hashPassword(newPassword);
+
+      if (!email) {
+        alert("Missing email in reset link.");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", email);
+        await updateDoc(userRef, { password: hashed });
+        alert("Password reset successful! Redirecting to login...");
+        window.location.href = "login.html";
+      } catch (error) {
+        alert("Error resetting password: " + error.message);
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
